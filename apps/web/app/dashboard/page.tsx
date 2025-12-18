@@ -264,14 +264,20 @@ export default function DashboardPage() {
       setListings(prevListings => 
         prevListings.map(listing => {
           if (listing.listingId === selectedListing.listingId && listing.approvalStats) {
+            const newApprovedCount = Math.max(0, Math.min(
+              listing.approvalStats.totalReviews,
+              listing.approvalStats.approvedCount + actualChangeCount
+            ));
+            // Pending count decreases by the number of items that changed state
+            const pendingCountChange = -Math.abs(actualChangeCount);
+            const newPendingCount = Math.max(0, listing.approvalStats.pendingCount + pendingCountChange);
+            
             return {
               ...listing,
               approvalStats: {
                 ...listing.approvalStats,
-                approvedCount: Math.max(0, Math.min(
-                  listing.approvalStats.totalReviews,
-                  listing.approvalStats.approvedCount + actualChangeCount
-                )),
+                approvedCount: newApprovedCount,
+                pendingCount: newPendingCount,
               }
             };
           }
@@ -282,6 +288,7 @@ export default function DashboardPage() {
       // Update selected listing
       setSelectedListing(prev => {
         if (!prev) return prev;
+        const pendingCountChange = -Math.abs(actualChangeCount);
         return {
           ...prev,
           approvalStats: prev.approvalStats ? {
@@ -290,6 +297,7 @@ export default function DashboardPage() {
               prev.approvalStats.totalReviews,
               prev.approvalStats.approvedCount + actualChangeCount
             )),
+            pendingCount: Math.max(0, prev.approvalStats.pendingCount + pendingCountChange),
           } : prev.approvalStats
         };
       });
@@ -357,19 +365,25 @@ export default function DashboardPage() {
 
       // Calculate the actual change: only increment if going from false to true, decrement if going from true to false
       const approvedCountChange = newApprovalState && !previousState ? 1 : !newApprovalState && previousState ? -1 : 0;
+      // Pending count changes only when transitioning from undefined to true/false
+      const pendingCountChange = previousState === undefined ? -1 : 0;
 
       // Update the listings state directly without full reload
       setListings(prevListings => 
         prevListings.map(listing => {
           if (listing.listingId === review.listingId && listing.approvalStats) {
+            const newApprovedCount = Math.max(0, Math.min(
+              listing.approvalStats.totalReviews,
+              listing.approvalStats.approvedCount + approvedCountChange
+            ));
+            const newPendingCount = Math.max(0, listing.approvalStats.pendingCount + pendingCountChange);
+            
             return {
               ...listing,
               approvalStats: {
                 ...listing.approvalStats,
-                approvedCount: Math.max(0, Math.min(
-                  listing.approvalStats.totalReviews,
-                  listing.approvalStats.approvedCount + approvedCountChange
-                )),
+                approvedCount: newApprovedCount,
+                pendingCount: newPendingCount,
               }
             };
           }
@@ -389,6 +403,7 @@ export default function DashboardPage() {
                 prev.approvalStats.totalReviews,
                 prev.approvalStats.approvedCount + approvedCountChange
               )),
+              pendingCount: Math.max(0, prev.approvalStats.pendingCount + pendingCountChange),
             } : prev.approvalStats
           };
         });
