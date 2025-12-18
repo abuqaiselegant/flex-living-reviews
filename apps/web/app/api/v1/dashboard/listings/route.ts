@@ -1,6 +1,7 @@
 /**
  * API Route for fetching dashboard listings with approval stats
  * GET /api/v1/dashboard/listings
+ * Updated: 2025-12-18 - Fixed DynamoDB composite key reads
  */
 
 import { NextResponse } from 'next/server';
