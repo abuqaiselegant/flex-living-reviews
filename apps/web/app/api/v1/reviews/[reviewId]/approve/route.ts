@@ -13,11 +13,13 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// DynamoDB client - ensure fresh connections
-const dynamoClient = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  maxAttempts: 3,
-});
+// Create fresh DynamoDB client for each request to avoid caching
+function createDynamoClient() {
+  return new DynamoDBClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    maxAttempts: 3,
+  });
+}
 
 async function getReviewById(reviewId: string) {
   const result = await pool.query(
@@ -40,6 +42,8 @@ async function updateApprovalStatus(
   reviewId: string,
   isApproved: boolean
 ): Promise<void> {
+  const dynamoClient = createDynamoClient();
+  
   const command = new PutItemCommand({
     TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
     Item: {

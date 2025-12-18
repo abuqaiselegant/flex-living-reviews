@@ -22,11 +22,13 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// DynamoDB client - ensure fresh connections
-const dynamoClient = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  maxAttempts: 3,
-});
+// Create fresh DynamoDB client for each request to avoid caching
+function createDynamoClient() {
+  return new DynamoDBClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    maxAttempts: 3,
+  });
+}
 
 async function queryListingKPIs() {
   const result = await pool.query(`
@@ -43,6 +45,8 @@ async function queryListingKPIs() {
 
 async function getAllApprovals(): Promise<Record<string, Record<string, boolean>>> {
   try {
+    const dynamoClient = createDynamoClient();
+    
     const command = new ScanCommand({
       TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
     });
