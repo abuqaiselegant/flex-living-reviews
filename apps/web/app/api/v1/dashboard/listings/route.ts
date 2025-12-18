@@ -14,9 +14,10 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// DynamoDB client
+// DynamoDB client - ensure fresh connections
 const dynamoClient = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-1',
+  maxAttempts: 3,
 });
 
 interface ReviewWithCategories {
