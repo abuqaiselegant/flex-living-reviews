@@ -239,7 +239,7 @@ export default function PropertyPage() {
                     </div>
 
                     {/* Category Ratings */}
-                    {review.categories.length > 0 && (
+                    {review.categories && review.categories.length > 0 && (
                       <div className="border-t border-slate-100 pt-6">
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {review.categories.map((category) => (
