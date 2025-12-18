@@ -22,17 +22,22 @@ const dynamoClient = new DynamoDBClient({
 async function getReviewsByListingId(listingId: string) {
   const result = await pool.query(
     `SELECT 
-      review_id as "reviewId",
-      listing_id as "listingId",
-      listing_name as "listingName",
-      guest_name as "guestName",
-      rating,
-      comment,
-      stay_date as "stayDate",
-      review_date as "reviewDate"
-    FROM reviews
-    WHERE listing_id = $1
-    ORDER BY review_date DESC`,
+      r.review_id as "reviewId",
+      r.listing_id as "listingId",
+      r.listing_name as "listingName",
+      r.guest_name as "guestName",
+      r.overall_rating as "overallRating",
+      r.public_review as "reviewText",
+      r.submitted_at as "submittedAt",
+      json_object_agg(
+        rc.category_key, rc.rating
+      ) FILTER (WHERE rc.category_key IS NOT NULL) as "categoryRatings"
+    FROM reviews r
+    LEFT JOIN review_categories rc ON r.review_id = rc.review_id
+    WHERE r.listing_id = $1
+    GROUP BY r.review_id, r.listing_id, r.listing_name, r.guest_name, 
+             r.overall_rating, r.public_review, r.submitted_at
+    ORDER BY r.submitted_at DESC`,
     [listingId]
   );
   return result.rows;
