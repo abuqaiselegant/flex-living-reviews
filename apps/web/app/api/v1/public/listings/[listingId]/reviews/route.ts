@@ -87,10 +87,28 @@ export async function GET(
     // Step 2: Get approvals for this listing
     const approvals = await getApprovalsForListing(listingId);
 
-    // Step 3: Filter for approved reviews only
-    const approvedReviews = reviews.filter(review => 
-      approvals[review.reviewId] === true
-    );
+    // Step 3: Filter for approved reviews only and format them
+    const approvedReviews = reviews
+      .filter(review => approvals[review.reviewId] === true)
+      .map(review => ({
+        reviewId: review.reviewId,
+        source: 'hostaway' as const,
+        listingId: review.listingId,
+        listingName: review.listingName,
+        type: 'review',
+        status: 'published',
+        submittedAtISO: review.submittedAt,
+        guestName: review.guestName,
+        publicReview: review.reviewText,
+        overallRating: review.overallRating,
+        categories: review.categoryRatings
+          ? Object.entries(review.categoryRatings).map(([key, rating]) => ({
+              key,
+              label: key.replace(/_/g, ' '),
+              rating: rating as number,
+            }))
+          : [],
+      }));
 
     console.log('Public reviews fetched', {
       listingId,
@@ -99,8 +117,8 @@ export async function GET(
     });
 
     return NextResponse.json({
+      listingId,
       reviews: approvedReviews,
-      total: approvedReviews.length,
     });
 
   } catch (error) {
