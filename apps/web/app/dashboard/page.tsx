@@ -754,7 +754,7 @@ export default function DashboardPage() {
                               <svg
                                 key={i}
                                 className={`w-3 h-3 ${
-                                  i < Math.round(listing.kpis.avgOverallRating)
+                                  i < Math.round(listing.kpis.avgOverallRating || 0)
                                     ? 'text-amber-500'
                                     : 'text-slate-300'
                                 }`}
