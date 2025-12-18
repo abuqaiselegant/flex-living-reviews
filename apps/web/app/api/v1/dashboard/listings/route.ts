@@ -150,13 +150,22 @@ export async function GET() {
       // Format reviews for frontend
       const latestReviews = reviews.map(r => ({
         reviewId: r.reviewId,
+        source: 'hostaway' as const,
         listingId: r.listingId,
         listingName: r.listingName,
+        type: 'review',
+        status: 'published',
         overallRating: r.overallRating,
         submittedAtISO: r.submittedAt,
         guestName: r.guestName,
-        reviewText: r.reviewText,
-        ratings: r.categories || {},
+        publicReview: r.reviewText,
+        categories: r.categories 
+          ? Object.entries(r.categories).map(([key, rating]) => ({
+              key,
+              label: key.replace(/_/g, ' '),
+              rating: rating as number,
+            }))
+          : [],
       }));
 
       return {
