@@ -25,8 +25,8 @@ async function getReviewById(reviewId: string) {
       listing_id as "listingId",
       listing_name as "listingName",
       guest_name as "guestName",
-      rating,
-      comment
+      overall_rating as "overallRating",
+      public_review as "reviewText"
     FROM reviews
     WHERE review_id = $1`,
     [reviewId]
@@ -60,13 +60,13 @@ async function recordApprovalAudit(
   reviewId: string,
   listingId: string,
   isApproved: boolean,
-  approvedBy: string
+  actor: string
 ): Promise<void> {
   await pool.query(
-    `INSERT INTO approval_audit (
-      review_id, listing_id, approved_by, is_approved, approved_at
+    `INSERT INTO review_approvals_audit (
+      review_id, listing_id, is_approved, actor, approved_at
     ) VALUES ($1, $2, $3, $4, NOW())`,
-    [reviewId, listingId, approvedBy, isApproved]
+    [reviewId, listingId, isApproved, actor]
   );
 }
 
@@ -79,7 +79,7 @@ export async function POST(
   try {
     // Parse request body
     const body = await request.json();
-    const { isApproved, approvedBy } = body;
+    const { listingId, isApproved } = body;
 
     // Validate request
     if (typeof isApproved !== 'boolean') {
@@ -89,14 +89,14 @@ export async function POST(
       );
     }
 
-    if (!approvedBy || typeof approvedBy !== 'string') {
+    if (!listingId || typeof listingId !== 'string') {
       return NextResponse.json(
-        { error: 'Invalid request: approvedBy is required' },
+        { error: 'Invalid request: listingId is required' },
         { status: 400 }
       );
     }
 
-    // Step 1: Get the review to verify it exists and get listing ID
+    // Step 1: Get the review to verify it exists
     const review = await getReviewById(reviewId);
 
     if (!review) {
@@ -106,25 +106,32 @@ export async function POST(
       );
     }
 
-    // Step 2: Update approval status in DynamoDB
-    await updateApprovalStatus(review.listingId, reviewId, isApproved);
+    // Verify listing ID matches
+    if (review.listingId !== listingId) {
+      return NextResponse.json(
+        { error: 'Listing ID mismatch' },
+        { status: 400 }
+      );
+    }
 
-    // Step 3: Record audit trail
-    await recordApprovalAudit(reviewId, review.listingId, isApproved, approvedBy);
+    // Step 2: Update approval status in DynamoDB
+    await updateApprovalStatus(listingId, reviewId, isApproved);
+
+    // Step 3: Record audit trail (use 'system' as default approver)
+    await recordApprovalAudit(reviewId, listingId, isApproved, 'system');
 
     console.log('Review approval updated', {
       reviewId,
-      listingId: review.listingId,
+      listingId,
       isApproved,
-      approvedBy,
     });
 
     return NextResponse.json({
-      success: true,
+      ok: true,
       reviewId,
-      listingId: review.listingId,
+      listingId,
       isApproved,
-      message: isApproved ? 'Review approved' : 'Review rejected',
+      approvedAt: new Date().toISOString(),
     });
 
   } catch (error) {
