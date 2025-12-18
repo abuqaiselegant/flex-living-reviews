@@ -102,6 +102,12 @@ export async function GET(
     return NextResponse.json({
       reviews: reviewsWithApprovalStatus,
       total: reviewsWithApprovalStatus.length,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     });
 
   } catch (error) {
