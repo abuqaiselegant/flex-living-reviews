@@ -9,6 +9,10 @@ import { Pool } from 'pg';
 import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
+// Disable static optimization for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
