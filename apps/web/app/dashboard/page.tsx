@@ -821,7 +821,7 @@ export default function DashboardPage() {
                           </span>
                           <span className="flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                            {listing.kpis.reviewCount - listing.approvalStats.approvedCount} Pending
+                            {listing.approvalStats.pendingCount} Pending
                           </span>
                         </div>
                       </div>
