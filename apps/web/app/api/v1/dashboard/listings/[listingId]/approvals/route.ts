@@ -1,0 +1,116 @@
+/**
+ * API Route for fetching listing reviews with approval status
+ * GET /api/v1/dashboard/listings/[listingId]/approvals
+ */
+
+import { NextResponse } from 'next/server';
+import { Pool } from 'pg';
+import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
+
+// Database connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+// DynamoDB client
+const dynamoClient = new DynamoDBClient({
+  region: process.env.AWS_REGION || 'us-east-1',
+});
+
+async function getReviewsByListingId(listingId: string) {
+  const result = await pool.query(
+    `SELECT 
+      review_id as "reviewId",
+      listing_id as "listingId",
+      listing_name as "listingName",
+      guest_name as "guestName",
+      rating,
+      comment,
+      stay_date as "stayDate",
+      review_date as "reviewDate"
+    FROM reviews
+    WHERE listing_id = $1
+    ORDER BY review_date DESC`,
+    [listingId]
+  );
+  return result.rows;
+}
+
+async function getApprovalsForListing(listingId: string): Promise<Record<string, boolean>> {
+  try {
+    const command = new GetItemCommand({
+      TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
+      Key: {
+        listingId: { S: listingId },
+      },
+    });
+
+    const response = await dynamoClient.send(command);
+    
+    if (!response.Item) {
+      return {};
+    }
+
+    const item = unmarshall(response.Item);
+    return (item.approvals as Record<string, boolean>) || {};
+  } catch (error) {
+    console.error('Failed to get approvals from DynamoDB', { listingId, error });
+    return {};
+  }
+}
+
+export async function GET(
+  request: Request,
+  { params }: { params: { listingId: string } }
+) {
+  const listingId = params.listingId;
+
+  try {
+    // Step 1: Get all reviews for the listing
+    const reviews = await getReviewsByListingId(listingId);
+
+    if (reviews.length === 0) {
+      return NextResponse.json({
+        reviews: [],
+        total: 0,
+        message: 'No reviews found for this listing',
+      });
+    }
+
+    // Step 2: Get approvals for this listing
+    const approvals = await getApprovalsForListing(listingId);
+
+    // Step 3: Add approval status to each review
+    const reviewsWithApprovalStatus = reviews.map(review => ({
+      ...review,
+      isApproved: approvals[review.reviewId] === true,
+      isPending: approvals[review.reviewId] === undefined,
+    }));
+
+    console.log('Reviews with approval status fetched', {
+      listingId,
+      totalReviews: reviews.length,
+    });
+
+    return NextResponse.json({
+      reviews: reviewsWithApprovalStatus,
+      total: reviewsWithApprovalStatus.length,
+    });
+
+  } catch (error) {
+    console.error('Failed to fetch reviews with approval status', {
+      listingId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch reviews',
+        detail: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
