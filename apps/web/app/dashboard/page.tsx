@@ -308,11 +308,13 @@ export default function DashboardPage() {
       // If dashboard was loaded with includeApprovals, we need to fetch fresh approval data
       // For now, we'll make an API call to get the current approval states
       try {
-        const response = await fetch(`/v1/dashboard/listings/${listing.listingId}/approvals`);
+        const response = await fetch(`/api/v1/dashboard/listings/${listing.listingId}/approvals`);
         if (response.ok) {
           const data = await response.json();
+          // Check each review's approval status from the response
           listing.latestReviews.forEach((review) => {
-            states[review.reviewId] = data.approvals?.[review.reviewId] || false;
+            const reviewData = data.reviews?.find((r: any) => r.reviewId === review.reviewId);
+            states[review.reviewId] = reviewData?.isApproved || false;
           });
         } else {
           // Fallback: default to false
