@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 
 // Database connection
 const pool = new Pool({
@@ -40,16 +40,13 @@ async function updateApprovalStatus(
   reviewId: string,
   isApproved: boolean
 ): Promise<void> {
-  const command = new UpdateItemCommand({
+  const command = new PutItemCommand({
     TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-    Key: {
+    Item: {
       listingId: { S: listingId },
       reviewId: { S: reviewId },
-    },
-    UpdateExpression: 'SET isApproved = :isApproved, approvedAt = :approvedAt',
-    ExpressionAttributeValues: {
-      ':isApproved': { BOOL: isApproved },
-      ':approvedAt': { S: new Date().toISOString() },
+      isApproved: { BOOL: isApproved },
+      approvedAt: { S: new Date().toISOString() },
     },
   });
 
