@@ -68,9 +68,12 @@ async function getAllApprovals(): Promise<Record<string, Record<string, boolean>
     
     for (const item of response.Items) {
       const unmarshalled = unmarshall(item);
+      console.log('Unmarshalled item:', JSON.stringify(unmarshalled));
       approvalsByListing[unmarshalled.listingId] = unmarshalled.approvals || {};
+      console.log(`Approvals for ${unmarshalled.listingId}:`, JSON.stringify(unmarshalled.approvals));
     }
 
+    console.log('All approvals by listing:', JSON.stringify(approvalsByListing));
     return approvalsByListing;
   } catch (error) {
     console.error('Failed to scan approvals from DynamoDB', { error });
