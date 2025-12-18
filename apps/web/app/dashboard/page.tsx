@@ -9,12 +9,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   fetchDashboardListings,
-  fetchHostawayGrouped,
   approveReview,
   DashboardListing,
   ApiError,
 } from '../../lib/api';
-import { NormalizedReview } from '../../../../packages/shared/src/types';
+import { NormalizedReview } from '../../lib/types';
 
 // Property images from Unsplash
 const propertyImages = [
@@ -64,37 +63,15 @@ export default function DashboardPage() {
     setError(null);
 
     try {
-      // Try dashboard endpoint first
       const response = await fetchDashboardListings({ includeApprovals: true });
       setListings(response.listings);
     } catch (err) {
-      console.error('Dashboard API failed, trying fallback', err);
-
-      try {
-        // Fallback to Hostaway grouped endpoint
-        const fallbackResponse = await fetchHostawayGrouped();
-        
-        // Convert to dashboard format
-        const dashboardListings: DashboardListing[] = fallbackResponse.listings.map((listing) => ({
-          listingId: listing.listingId,
-          listingName: listing.listingName,
-          kpis: {
-            reviewCount: listing.kpis.reviewCount,
-            avgOverallRating: listing.kpis.avgOverallRating,
-            avgByCategory: listing.kpis.avgByCategory,
-            worstCategory: getWorstCategory(listing.kpis.avgByCategory),
-          },
-          latestReviews: listing.reviews,
-        }));
-
-        setListings(dashboardListings);
-      } catch (fallbackErr) {
-        setError(
-          fallbackErr instanceof ApiError
-            ? fallbackErr.message
-            : 'Failed to load dashboard data'
-        );
-      }
+      console.error('Dashboard API failed', err);
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Failed to load dashboard data'
+      );
     } finally {
       setLoading(false);
     }

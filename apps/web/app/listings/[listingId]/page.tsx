@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchPublicReviews, ApiError } from '../../../lib/api';
-import { NormalizedReview } from '../../../../../packages/shared/src/types';
+import { NormalizedReview } from '../../../lib/types';
 
 // Generate avatar color from name
 function getAvatarColor(name: string): string {

@@ -5,8 +5,7 @@
 
 import {
   NormalizedReview,
-  ListingGroup,
-} from '../../../packages/shared/src/types';
+} from './types';
 
 /**
  * Get the API base URL from environment variables
@@ -73,25 +72,6 @@ async function apiFetch<T>(
       0
     );
   }
-}
-
-/**
- * Response type for fetchHostawayGrouped
- */
-export interface HostawayGroupedResponse {
-  source: string;
-  generatedAt: string;
-  totalReviews: number;
-  listings: ListingGroup[];
-}
-
-/**
- * Fetch and normalize Hostaway reviews, grouped by listing
- * 
- * @returns Grouped reviews with KPIs
- */
-export async function fetchHostawayGrouped(): Promise<HostawayGroupedResponse> {
-  return apiFetch<HostawayGroupedResponse>('/api/v1/reviews/hostaway');
 }
 
 /**
