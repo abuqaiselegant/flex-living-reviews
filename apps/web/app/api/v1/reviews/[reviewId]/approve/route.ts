@@ -43,12 +43,12 @@ async function updateApprovalStatus(
   const command = new UpdateItemCommand({
     TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
     Key: {
+      listingId: { S: listingId },
       reviewId: { S: reviewId },
     },
-    UpdateExpression: 'SET isApproved = :isApproved, listingId = :listingId, approvedAt = :approvedAt',
+    UpdateExpression: 'SET isApproved = :isApproved, approvedAt = :approvedAt',
     ExpressionAttributeValues: {
       ':isApproved': { BOOL: isApproved },
-      ':listingId': { S: listingId },
       ':approvedAt': { S: new Date().toISOString() },
     },
   });
