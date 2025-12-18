@@ -10,8 +10,9 @@ import {
 
 /**
  * Get the API base URL from environment variables
+ * Use relative paths in production (Vercel) or localhost for local development
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 /**
  * API Error class for handling API errors
