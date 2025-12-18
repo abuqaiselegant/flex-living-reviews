@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 interface PublicListing {
@@ -40,25 +40,34 @@ async function queryListingKPIs() {
   return result.rows;
 }
 
-async function getApprovalsForListing(listingId: string): Promise<Record<string, boolean>> {
+async function getAllApprovals(): Promise<Record<string, Record<string, boolean>>> {
   try {
-    const command = new GetItemCommand({
+    const command = new ScanCommand({
       TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-      Key: {
-        listingId: { S: listingId },
-      },
     });
 
     const response = await dynamoClient.send(command);
     
-    if (!response.Item) {
+    if (!response.Items || response.Items.length === 0) {
       return {};
     }
 
-    const item = unmarshall(response.Item);
-    return (item.approvals as Record<string, boolean>) || {};
+    const approvalsByListing: Record<string, Record<string, boolean>> = {};
+    
+    for (const item of response.Items) {
+      const unmarshalled = unmarshall(item);
+      const { listingId, reviewId, isApproved } = unmarshalled;
+      
+      if (!approvalsByListing[listingId]) {
+        approvalsByListing[listingId] = {};
+      }
+      
+      approvalsByListing[listingId][reviewId] = isApproved;
+    }
+
+    return approvalsByListing;
   } catch (error) {
-    console.error('Failed to get approvals from DynamoDB', { listingId, error });
+    console.error('Failed to scan approvals from DynamoDB', { error });
     return {};
   }
 }
@@ -69,13 +78,16 @@ export async function GET() {
     const listingGroups = await queryListingKPIs();
     console.log('Listing groups retrieved', { count: listingGroups.length });
 
-    // Step 2: For each listing, get approval stats and filter
+    // Step 2: Get all approvals once
+    const approvalsByListing = await getAllApprovals();
+
+    // Step 3: For each listing, calculate approved count and filter
     const publicListings: PublicListing[] = [];
 
     for (const group of listingGroups) {
       try {
         // Get approvals for this listing
-        const approvals = await getApprovalsForListing(group.listingId);
+        const approvals = approvalsByListing[group.listingId] || {};
         
         // Count approved reviews
         const approvedReviewIds = Object.entries(approvals)

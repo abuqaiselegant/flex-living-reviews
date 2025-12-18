@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Database connection
@@ -46,21 +46,27 @@ async function getReviewsByListingId(listingId: string) {
 
 async function getApprovalsForListing(listingId: string): Promise<Record<string, boolean>> {
   try {
-    const command = new GetItemCommand({
+    const command = new ScanCommand({
       TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-      Key: {
-        listingId: { S: listingId },
+      FilterExpression: 'listingId = :listingId',
+      ExpressionAttributeValues: {
+        ':listingId': { S: listingId },
       },
     });
 
     const response = await dynamoClient.send(command);
     
-    if (!response.Item) {
+    if (!response.Items || response.Items.length === 0) {
       return {};
     }
 
-    const item = unmarshall(response.Item);
-    return (item.approvals as Record<string, boolean>) || {};
+    const approvals: Record<string, boolean> = {};
+    for (const item of response.Items) {
+      const unmarshalled = unmarshall(item);
+      approvals[unmarshalled.reviewId] = unmarshalled.isApproved;
+    }
+
+    return approvals;
   } catch (error) {
     console.error('Failed to get approvals from DynamoDB', { listingId, error });
     return {};

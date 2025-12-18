@@ -69,7 +69,13 @@ async function getAllApprovals(): Promise<Record<string, Record<string, boolean>
     
     for (const item of response.Items) {
       const unmarshalled = unmarshall(item);
-      approvalsByListing[unmarshalled.listingId] = unmarshalled.approvals || {};
+      const { listingId, reviewId, isApproved } = unmarshalled;
+      
+      if (!approvalsByListing[listingId]) {
+        approvalsByListing[listingId] = {};
+      }
+      
+      approvalsByListing[listingId][reviewId] = isApproved;
     }
 
     return approvalsByListing;
