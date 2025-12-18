@@ -68,12 +68,9 @@ async function getAllApprovals(): Promise<Record<string, Record<string, boolean>
     
     for (const item of response.Items) {
       const unmarshalled = unmarshall(item);
-      console.log('Unmarshalled item:', JSON.stringify(unmarshalled));
       approvalsByListing[unmarshalled.listingId] = unmarshalled.approvals || {};
-      console.log(`Approvals for ${unmarshalled.listingId}:`, JSON.stringify(unmarshalled.approvals));
     }
 
-    console.log('All approvals by listing:', JSON.stringify(approvalsByListing));
     return approvalsByListing;
   } catch (error) {
     console.error('Failed to scan approvals from DynamoDB', { error });
@@ -112,18 +109,12 @@ export async function GET() {
       const approvals = allApprovals[listing.listingId] || {};
       const reviews = listing.reviews;
 
-      // Debug logging
-      console.log('Processing listing:', listing.listingId);
-      console.log('Approvals for listing:', approvals);
-      console.log('Review IDs:', reviews.map(r => r.reviewId));
-
       // Calculate approval stats - count only explicitly approved reviews
       let approvedCount = 0;
       let rejectedCount = 0;
       
       reviews.forEach(review => {
         const approvalStatus = approvals[review.reviewId];
-        console.log(`Review ${review.reviewId}: approval status = ${approvalStatus}`);
         if (approvalStatus === true) {
           approvedCount++;
         } else if (approvalStatus === false) {
@@ -132,8 +123,6 @@ export async function GET() {
       });
       
       const pendingCount = reviews.length - approvedCount - rejectedCount;
-
-      console.log(`Stats for ${listing.listingId}: approved=${approvedCount}, rejected=${rejectedCount}, pending=${pendingCount}`);
 
 
       // Calculate KPIs
