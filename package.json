@@ -1,0 +1,25 @@
+{
+  "name": "flex-living-reviews",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flex Living Reviews Dashboard - Multi-source review management system",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "normalizer": "cd apps/normalizer && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "api": "cd infra && serverless offline start",
+    "web": "npm run dev --workspace=apps/web"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

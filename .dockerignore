@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# Next.js
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Testing
+coverage/
+
+# Logs
+*.log
+
+# Database
+postgres_data/
+dynamodb_data/
