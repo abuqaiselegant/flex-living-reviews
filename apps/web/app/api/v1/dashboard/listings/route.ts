@@ -109,11 +109,20 @@ export async function GET() {
       const approvals = allApprovals[listing.listingId] || {};
       const reviews = listing.reviews;
 
-      // Calculate approval stats
-      const approvedCount = Object.values(approvals).filter(
-        isApproved => isApproved === true
-      ).length;
-      const pendingCount = reviews.length - approvedCount;
+      // Calculate approval stats - count only explicitly approved reviews
+      let approvedCount = 0;
+      let rejectedCount = 0;
+      
+      reviews.forEach(review => {
+        const approvalStatus = approvals[review.reviewId];
+        if (approvalStatus === true) {
+          approvedCount++;
+        } else if (approvalStatus === false) {
+          rejectedCount++;
+        }
+      });
+      
+      const pendingCount = reviews.length - approvedCount - rejectedCount;
 
       // Calculate KPIs
       const avgOverallRating = reviews.length > 0
