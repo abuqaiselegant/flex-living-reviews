@@ -24,7 +24,7 @@ interface ReviewWithCategories {
   listingId: string;
   listingName: string;
   overallRating: number;
-  submittedAtISO: string;
+  submittedAt: string;
   guestName: string;
   reviewText: string;
   categories: Record<string, number>;
@@ -37,17 +37,17 @@ async function queryReviewsWithCategories() {
       r.listing_id as "listingId",
       r.listing_name as "listingName",
       r.overall_rating as "overallRating",
-      r.submitted_at_iso as "submittedAtISO",
+      r.submitted_at as "submittedAt",
       r.guest_name as "guestName",
-      r.review_text as "reviewText",
+      r.public_review as "reviewText",
       json_object_agg(
         rc.category_key, rc.rating
       ) FILTER (WHERE rc.category_key IS NOT NULL) as categories
     FROM reviews r
     LEFT JOIN review_categories rc ON r.review_id = rc.review_id
     GROUP BY r.review_id, r.listing_id, r.listing_name, r.overall_rating, 
-             r.submitted_at_iso, r.guest_name, r.review_text
-    ORDER BY r.listing_name, r.submitted_at_iso DESC
+             r.submitted_at, r.guest_name, r.public_review
+    ORDER BY r.listing_name, r.submitted_at DESC
   `);
   return result.rows as ReviewWithCategories[];
 }
@@ -153,7 +153,7 @@ export async function GET() {
         listingId: r.listingId,
         listingName: r.listingName,
         overallRating: r.overallRating,
-        submittedAtISO: r.submittedAtISO,
+        submittedAtISO: r.submittedAt,
         guestName: r.guestName,
         reviewText: r.reviewText,
         ratings: r.categories || {},
