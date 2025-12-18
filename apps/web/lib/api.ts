@@ -91,7 +91,7 @@ export interface HostawayGroupedResponse {
  * @returns Grouped reviews with KPIs
  */
 export async function fetchHostawayGrouped(): Promise<HostawayGroupedResponse> {
-  return apiFetch<HostawayGroupedResponse>('/v1/reviews/hostaway');
+  return apiFetch<HostawayGroupedResponse>('/api/v1/reviews/hostaway');
 }
 
 /**
@@ -169,7 +169,7 @@ export async function fetchDashboardListings(
   if (params?.includeApprovals) queryParams.append('includeApprovals', 'true');
 
   const queryString = queryParams.toString();
-  const endpoint = `/v1/dashboard/listings${queryString ? `?${queryString}` : ''}`;
+  const endpoint = `/api/v1/dashboard/listings${queryString ? `?${queryString}` : ''}`;
 
   return apiFetch<DashboardListingsResponse>(endpoint);
 }
@@ -198,7 +198,7 @@ export async function approveReview(
   listingId: string,
   isApproved: boolean
 ): Promise<ApproveReviewResponse> {
-  return apiFetch<ApproveReviewResponse>(`/v1/reviews/${reviewId}/approve`, {
+  return apiFetch<ApproveReviewResponse>(`/api/v1/reviews/${reviewId}/approve`, {
     method: 'POST',
     body: JSON.stringify({
       listingId,
@@ -230,9 +230,7 @@ export interface PublicListing {
  */
 export interface PublicListingsResponse {
   listings: PublicListing[];
-  meta: {
-    total: number;
-  };
+  total: number;
 }
 
 /**
@@ -241,7 +239,7 @@ export interface PublicListingsResponse {
  * @returns Public listings with approved reviews only
  */
 export async function fetchPublicListings(): Promise<PublicListingsResponse> {
-  return apiFetch<PublicListingsResponse>('/v1/public/listings');
+  return apiFetch<PublicListingsResponse>('/api/v1/public/listings');
 }
 
 /**
@@ -253,5 +251,5 @@ export async function fetchPublicListings(): Promise<PublicListingsResponse> {
 export async function fetchPublicReviews(
   listingId: string
 ): Promise<PublicReviewsResponse> {
-  return apiFetch<PublicReviewsResponse>(`/v1/public/listings/${listingId}/reviews`);
+  return apiFetch<PublicReviewsResponse>(`/api/v1/public/listings/${listingId}/reviews`);
 }
