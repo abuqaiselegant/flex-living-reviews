@@ -19,17 +19,37 @@ const dynamoClient = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-1',
 });
 
-async function queryListingKPIs() {
+interface ReviewWithCategories {
+  reviewId: string;
+  listingId: string;
+  listingName: string;
+  overallRating: number;
+  submittedAtISO: string;
+  guestName: string;
+  reviewText: string;
+  categories: Record<string, number>;
+}
+
+async function queryReviewsWithCategories() {
   const result = await pool.query(`
     SELECT 
-      listing_id as "listingId",
-      listing_name as "listingName",
-      total_reviews as "totalReviews",
-      avg_rating as "avgRating"
-    FROM listing_kpis
-    ORDER BY listing_name
+      r.review_id as "reviewId",
+      r.listing_id as "listingId",
+      r.listing_name as "listingName",
+      r.overall_rating as "overallRating",
+      r.submitted_at_iso as "submittedAtISO",
+      r.guest_name as "guestName",
+      r.review_text as "reviewText",
+      json_object_agg(
+        rc.category_key, rc.rating
+      ) FILTER (WHERE rc.category_key IS NOT NULL) as categories
+    FROM reviews r
+    LEFT JOIN review_categories rc ON r.review_id = rc.review_id
+    GROUP BY r.review_id, r.listing_id, r.listing_name, r.overall_rating, 
+             r.submitted_at_iso, r.guest_name, r.review_text
+    ORDER BY r.listing_name, r.submitted_at_iso DESC
   `);
-  return result.rows;
+  return result.rows as ReviewWithCategories[];
 }
 
 async function getAllApprovals(): Promise<Record<string, Record<string, boolean>>> {
@@ -60,29 +80,100 @@ async function getAllApprovals(): Promise<Record<string, Record<string, boolean>
 
 export async function GET() {
   try {
-    // Step 1: Get all listings with KPIs
-    const listingGroups = await queryListingKPIs();
+    // Step 1: Get all reviews with categories
+    const allReviews = await queryReviewsWithCategories();
 
     // Step 2: Get all approvals
     const allApprovals = await getAllApprovals();
 
-    // Step 3: Combine data
-    const dashboardListings = listingGroups.map(group => {
-      const approvals = allApprovals[group.listingId] || {};
-      
+    // Step 3: Group reviews by listing and calculate KPIs
+    const listingsMap: Record<string, {
+      listingId: string;
+      listingName: string;
+      reviews: ReviewWithCategories[];
+    }> = {};
+
+    for (const review of allReviews) {
+      if (!listingsMap[review.listingId]) {
+        listingsMap[review.listingId] = {
+          listingId: review.listingId,
+          listingName: review.listingName,
+          reviews: [],
+        };
+      }
+      listingsMap[review.listingId].reviews.push(review);
+    }
+
+    // Step 4: Build dashboard listings
+    const dashboardListings = Object.values(listingsMap).map(listing => {
+      const approvals = allApprovals[listing.listingId] || {};
+      const reviews = listing.reviews;
+
+      // Calculate approval stats
       const approvedCount = Object.values(approvals).filter(
         isApproved => isApproved === true
       ).length;
+      const pendingCount = reviews.length - approvedCount;
 
-      const pendingCount = group.totalReviews - approvedCount;
+      // Calculate KPIs
+      const avgOverallRating = reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.overallRating, 0) / reviews.length
+        : null;
+
+      // Calculate average by category
+      const categoryTotals: Record<string, { sum: number; count: number }> = {};
+      for (const review of reviews) {
+        if (review.categories) {
+          for (const [key, rating] of Object.entries(review.categories)) {
+            if (!categoryTotals[key]) {
+              categoryTotals[key] = { sum: 0, count: 0 };
+            }
+            categoryTotals[key].sum += rating;
+            categoryTotals[key].count += 1;
+          }
+        }
+      }
+
+      const avgByCategory: Record<string, number> = {};
+      for (const [key, { sum, count }] of Object.entries(categoryTotals)) {
+        avgByCategory[key] = sum / count;
+      }
+
+      // Find worst category
+      let worstCategory: { key: string; avgRating: number } | null = null;
+      for (const [key, avgRating] of Object.entries(avgByCategory)) {
+        if (!worstCategory || avgRating < worstCategory.avgRating) {
+          worstCategory = { key, avgRating };
+        }
+      }
+
+      // Format reviews for frontend
+      const latestReviews = reviews.map(r => ({
+        reviewId: r.reviewId,
+        listingId: r.listingId,
+        listingName: r.listingName,
+        overallRating: r.overallRating,
+        submittedAtISO: r.submittedAtISO,
+        guestName: r.guestName,
+        reviewText: r.reviewText,
+        ratings: r.categories || {},
+      }));
 
       return {
-        listingId: group.listingId,
-        listingName: group.listingName,
-        totalReviews: group.totalReviews,
-        approvedReviews: approvedCount,
-        pendingReviews: pendingCount,
-        avgRating: group.avgRating,
+        listingId: listing.listingId,
+        listingName: listing.listingName,
+        kpis: {
+          reviewCount: reviews.length,
+          avgOverallRating,
+          avgByCategory,
+          worstCategory,
+        },
+        approvalStats: {
+          totalReviews: reviews.length,
+          approvedCount,
+          pendingCount,
+        },
+        latestReviews,
       };
     });
 
@@ -92,12 +183,19 @@ export async function GET() {
 
     return NextResponse.json({
       listings: dashboardListings,
-      total: dashboardListings.length,
+      meta: {
+        total: dashboardListings.length,
+        returned: dashboardListings.length,
+        hasMore: false,
+        filters: {},
+        sort: 'name',
+      },
     });
 
   } catch (error) {
     console.error('Failed to fetch dashboard listings', {
       error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     return NextResponse.json(
