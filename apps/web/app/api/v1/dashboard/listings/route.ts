@@ -61,6 +61,11 @@ async function getAllApprovals(): Promise<Record<string, Record<string, boolean>
 
     const response = await dynamoClient.send(command);
     
+    console.log('[getAllApprovals] Scanned DynamoDB', { 
+      itemCount: response.Items?.length || 0,
+      timestamp: new Date().toISOString(),
+    });
+    
     if (!response.Items || response.Items.length === 0) {
       return {};
     }
@@ -77,6 +82,11 @@ async function getAllApprovals(): Promise<Record<string, Record<string, boolean>
       
       approvalsByListing[listingId][reviewId] = isApproved;
     }
+
+    console.log('[getAllApprovals] Grouped approvals', {
+      listingCount: Object.keys(approvalsByListing).length,
+      listings: Object.keys(approvalsByListing),
+    });
 
     return approvalsByListing;
   } catch (error) {
