@@ -48,3 +48,8 @@ coverage/
 .vercel
 *.pem
 .cache/
+
+# Local submission files (not for GitHub)
+SUBMISSION-NOTES.md
+SUBMISSION.txt
+*SUBMISSION*
