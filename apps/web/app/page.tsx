@@ -112,7 +112,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[600px]">
+      <section className="relative overflow-hidden min-h-[500px] sm:min-h-[600px]">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
@@ -123,26 +123,26 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-white/70"></div>
         </div>
         
-        <div className="container mx-auto px-4 pt-20 pb-32 relative z-10">
+        <div className="container mx-auto px-4 pt-16 sm:pt-20 pb-24 sm:pb-32 relative z-10">
           <div className={`max-w-6xl mx-auto text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             {/* Trust Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-full mb-8">
-              <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-full mb-6 sm:mb-8">
+              <svg className="w-4 sm:w-5 h-4 sm:h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-              <span className="text-sm font-medium text-amber-900">Trusted by Premium Property Managers</span>
+              <span className="text-xs sm:text-sm font-medium text-amber-900">Trusted by Premium Property Managers</span>
             </div>
 
             {/* Main Heading */}
-            <h1 className="text-7xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent leading-tight px-4">
               Flex Living
             </h1>
-            <p className="text-3xl md:text-4xl font-light text-slate-600 mb-8">
+            <p className="text-2xl sm:text-3xl md:text-4xl font-light text-slate-600 mb-8 px-4">
               Elegant Review Management
             </p>
-            <div className="text-xl text-slate-500 max-w-3xl mx-auto mb-12 leading-relaxed min-h-[96px] flex items-center justify-center relative overflow-hidden">
+            <div className="text-base sm:text-lg md:text-xl text-slate-500 max-w-3xl mx-auto mb-12 leading-relaxed min-h-[120px] sm:min-h-[96px] flex items-center justify-center relative overflow-hidden px-4">
               <p 
-                className="absolute inset-0 flex items-center justify-center px-4 transition-all duration-700 ease-in-out"
+                className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 md:px-8 transition-all duration-700 ease-in-out"
                 style={{
                   opacity: 1,
                   transform: 'translateY(0) scale(1)',
@@ -185,35 +185,35 @@ export default function HomePage() {
         </div>
 
         {/* Animated Stats */}
-        <div className="container mx-auto px-4 -mt-12 mb-20">
+        <div className="container mx-auto px-4 -mt-8 sm:-mt-12 mb-16 sm:mb-20">
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                <div className="text-4xl font-bold text-slate-900 mb-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                <div className="text-2xl sm:text-4xl font-bold text-slate-900 mb-1 sm:mb-2">
                   <AnimatedCounter end={1000} suffix="+" />
                 </div>
-                <div className="text-sm text-slate-600 font-medium">Happy Guests</div>
+                <div className="text-xs sm:text-sm text-slate-600 font-medium">Happy Guests</div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                <div className="text-4xl font-bold text-slate-900 mb-2">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                <div className="text-2xl sm:text-4xl font-bold text-slate-900 mb-1 sm:mb-2">
                   <AnimatedCounter end={50} suffix="+" />
                 </div>
-                <div className="text-sm text-slate-600 font-medium">Properties</div>
+                <div className="text-xs sm:text-sm text-slate-600 font-medium">Properties</div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                <div className="text-4xl font-bold text-slate-900 mb-2">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                <div className="text-2xl sm:text-4xl font-bold text-slate-900 mb-1 sm:mb-2">
                   <AnimatedCounter end={98} suffix="%" />
                 </div>
-                <div className="text-sm text-slate-600 font-medium">Satisfaction</div>
+                <div className="text-xs sm:text-sm text-slate-600 font-medium">Satisfaction</div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
-                <div className="text-4xl font-bold text-slate-900 mb-2">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all">
+                <div className="text-2xl sm:text-4xl font-bold text-slate-900 mb-1 sm:mb-2">
                   4.<AnimatedCounter end={8} />
                 </div>
-                <div className="text-sm text-slate-600 font-medium">Avg Rating</div>
+                <div className="text-xs sm:text-sm text-slate-600 font-medium">Avg Rating</div>
               </div>
             </div>
           </div>
@@ -221,13 +221,13 @@ export default function HomePage() {
       </section>
 
       {/* Guest Reviews Marquee */}
-      <section className="py-16 bg-slate-50 overflow-hidden">
-        <div className="container mx-auto px-4 mb-12">
+      <section className="py-12 sm:py-16 bg-slate-50 overflow-hidden">
+        <div className="container mx-auto px-4 mb-8 sm:mb-12">
           <div className="text-center">
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-3 sm:mb-4 px-4">
               What Our Guests Say
             </h2>
-            <p className="text-lg text-slate-600">
+            <p className="text-base sm:text-lg text-slate-600 px-4">
               Real experiences from travelers who stayed with us
             </p>
           </div>
@@ -280,10 +280,10 @@ export default function HomePage() {
           ].map((review, index) => (
             <div
               key={index}
-              className="relative mx-4 w-[380px] overflow-hidden rounded-2xl bg-white shadow-xl hover:shadow-2xl transition-shadow"
+              className="relative mx-2 sm:mx-4 w-[320px] sm:w-[380px] overflow-hidden rounded-2xl bg-white shadow-xl hover:shadow-2xl transition-shadow"
             >
               {/* Property Image */}
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-40 sm:h-48 overflow-hidden">
                 <img
                   src={review.image}
                   alt={review.property}
@@ -298,13 +298,13 @@ export default function HomePage() {
               </div>
 
               {/* Review Content */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {/* Stars */}
-                <div className="flex gap-1 mb-3">
+                <div className="flex gap-1 mb-2 sm:mb-3">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`w-5 h-5 ${i < review.rating ? 'text-amber-500' : 'text-slate-300'}`}
+                      className={`w-4 sm:w-5 h-4 sm:h-5 ${i < review.rating ? 'text-amber-500' : 'text-slate-300'}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -314,20 +314,20 @@ export default function HomePage() {
                 </div>
 
                 {/* Review Text */}
-                <p className="text-slate-700 mb-4 leading-relaxed line-clamp-3">
+                <p className="text-sm sm:text-base text-slate-700 mb-3 sm:mb-4 leading-relaxed line-clamp-3">
                   "{review.review}"
                 </p>
 
                 {/* Guest Name */}
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
-                    <span className="text-slate-700 font-semibold text-sm">
+                <div className="flex items-center gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-100">
+                  <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0">
+                    <span className="text-slate-700 font-semibold text-xs sm:text-sm">
                       {review.name.split(' ').map(n => n[0]).join('')}
                     </span>
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">{review.name}</p>
-                    <p className="text-sm text-slate-500">Verified Guest</p>
+                    <p className="font-semibold text-slate-900 text-sm sm:text-base">{review.name}</p>
+                    <p className="text-xs sm:text-sm text-slate-500">Verified Guest</p>
                   </div>
                 </div>
               </div>
@@ -337,14 +337,14 @@ export default function HomePage() {
       </section>
 
       {/* Featured Properties */}
-      <section className="py-20 bg-white">
+      <section className="py-16 sm:py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-3 sm:mb-4 px-4">
                 Featured Properties
               </h2>
-              <p className="text-lg text-slate-600">
+              <p className="text-base sm:text-lg text-slate-600 px-4">
                 Discover our most loved vacation rentals
               </p>
             </div>
