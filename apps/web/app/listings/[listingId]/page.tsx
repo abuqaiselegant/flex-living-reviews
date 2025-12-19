@@ -93,16 +93,28 @@ export default function PropertyPage() {
         <div className="absolute inset-0 bg-grid-white/5"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-800/50 via-transparent to-transparent"></div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          {/* Back Button */}
-          <Link
-            href="/listings"
-            className="inline-flex items-center gap-2 text-slate-300 hover:text-white mb-8 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="font-medium">Back to all properties</span>
-          </Link>
+          {/* Navigation Buttons */}
+          <div className="flex items-center gap-4 mb-8">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span className="font-medium">Home</span>
+            </Link>
+            <span className="text-slate-500">|</span>
+            <Link
+              href="/listings"
+              className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="font-medium">All properties</span>
+            </Link>
+          </div>
 
           {/* Property Info */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
