@@ -37,37 +37,6 @@ async function getReviewsByListingId(listingId: string) {
   return result.rows;
 }
 
-async function getApprovalsForListing(listingId: string): Promise<Record<string, boolean>> {
-  try {
-    const dynamoClient = createDynamoClient();
-    
-    const command = new ScanCommand({
-      TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-      FilterExpression: 'listingId = :listingId',
-      ExpressionAttributeValues: {
-        ':listingId': { S: listingId },
-      },
-    });
-
-    const response = await dynamoClient.send(command);
-    
-    if (!response.Items || response.Items.length === 0) {
-      return {};
-    }
-
-    const approvals: Record<string, boolean> = {};
-    for (const item of response.Items) {
-      const unmarshalled = unmarshall(item);
-      approvals[unmarshalled.reviewId] = unmarshalled.isApproved;
-    }
-
-    return approvals;
-  } catch (error) {
-    console.error('Failed to get approvals from DynamoDB', { listingId, error });
-    return {};
-  }
-}
-
 export async function GET(
   request: Request,
   { params }: { params: { listingId: string } }
