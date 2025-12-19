@@ -1,7 +1,7 @@
 /**
  * API Route for fetching public listings with approved review counts
  * GET /api/v1/public/listings
- * Updated: 2025-12-18 - Fixed DynamoDB composite key reads
+ * Updated: 2025-12-19 - Simplified to PostgreSQL-only architecture
  */
 
 import { NextResponse } from 'next/server';
