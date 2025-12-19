@@ -33,8 +33,8 @@ async function updateApprovalStatus(
   listingId: string,
   reviewId: string,
   isApproved: boolean
-): Promise<void> {
-  await pool.query(
+): Promise<number> {
+  const result = await pool.query(
     `UPDATE reviews 
      SET is_approved = $1,
          approved_at = NOW(),
@@ -42,6 +42,7 @@ async function updateApprovalStatus(
      WHERE review_id = $2 AND listing_id = $3`,
     [isApproved, reviewId, listingId]
   );
+  return result.rowCount || 0;
 }
 
 async function recordApprovalAudit(
@@ -103,8 +104,12 @@ export async function POST(
       );
     }
 
-    // Step 2: Update approval status in DynamoDB
-    await updateApprovalStatus(listingId, reviewId, isApproved);
+    // Step 2: Update approval status in PostgreSQL
+    const rowsUpdated = await updateApprovalStatus(listingId, reviewId, isApproved);
+
+    if (rowsUpdated === 0) {
+      console.warn('No rows updated for approval', { reviewId, listingId, isApproved });
+    }
 
     // Step 3: Record audit trail (use 'system' as default approver)
     await recordApprovalAudit(reviewId, listingId, isApproved, 'system');
