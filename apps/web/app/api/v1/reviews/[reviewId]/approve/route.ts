@@ -1,25 +1,17 @@
 /**
  * API Route for approving/rejecting a review
  * POST /api/v1/reviews/[reviewId]/approve
+ * Updated: 2025-12-18 - Simplified to use PostgreSQL only
  */
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
-
-// Create fresh DynamoDB client for each request to avoid caching
-function createDynamoClient() {
-  return new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
-    maxAttempts: 3,
-  });
-}
 
 async function getReviewById(reviewId: string) {
   const result = await pool.query(
@@ -42,19 +34,14 @@ async function updateApprovalStatus(
   reviewId: string,
   isApproved: boolean
 ): Promise<void> {
-  const dynamoClient = createDynamoClient();
-  
-  const command = new PutItemCommand({
-    TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-    Item: {
-      listingId: { S: listingId },
-      reviewId: { S: reviewId },
-      isApproved: { BOOL: isApproved },
-      approvedAt: { S: new Date().toISOString() },
-    },
-  });
-
-  await dynamoClient.send(command);
+  await pool.query(
+    `UPDATE reviews 
+     SET is_approved = $1,
+         approved_at = NOW(),
+         approved_by = 'system'
+     WHERE review_id = $2 AND listing_id = $3`,
+    [isApproved, reviewId, listingId]
+  );
 }
 
 async function recordApprovalAudit(
@@ -66,7 +53,8 @@ async function recordApprovalAudit(
   await pool.query(
     `INSERT INTO review_approvals_audit (
       review_id, listing_id, is_approved, actor, approved_at
-    ) VALUES ($1, $2, $3, $4, NOW())`,
+    ) VALUES ($1, $2, $3, $4, NOW())
+    ON CONFLICT DO NOTHING`,
     [reviewId, listingId, isApproved, actor]
   );
 }

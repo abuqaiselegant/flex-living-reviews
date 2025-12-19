@@ -5,22 +5,12 @@
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
-
-// Create fresh DynamoDB client for each request to avoid caching
-function createDynamoClient() {
-  return new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
-    maxAttempts: 3,
-  });
-}
 
 async function getReviewsByListingId(listingId: string) {
   const result = await pool.query(
@@ -32,49 +22,19 @@ async function getReviewsByListingId(listingId: string) {
       r.overall_rating as "overallRating",
       r.public_review as "reviewText",
       r.submitted_at as "submittedAt",
+      r.is_approved as "isApproved",
       json_object_agg(
         rc.category_key, rc.rating
       ) FILTER (WHERE rc.category_key IS NOT NULL) as "categoryRatings"
     FROM reviews r
     LEFT JOIN review_categories rc ON r.review_id = rc.review_id
-    WHERE r.listing_id = $1
+    WHERE r.listing_id = $1 AND r.is_approved = true
     GROUP BY r.review_id, r.listing_id, r.listing_name, r.guest_name, 
-             r.overall_rating, r.public_review, r.submitted_at
+             r.overall_rating, r.public_review, r.submitted_at, r.is_approved
     ORDER BY r.submitted_at DESC`,
     [listingId]
   );
   return result.rows;
-}
-
-async function getApprovalsForListing(listingId: string): Promise<Record<string, boolean>> {
-  try {
-    const dynamoClient = createDynamoClient();
-    
-    const command = new ScanCommand({
-      TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-      FilterExpression: 'listingId = :listingId',
-      ExpressionAttributeValues: {
-        ':listingId': { S: listingId },
-      },
-    });
-
-    const response = await dynamoClient.send(command);
-    
-    if (!response.Items || response.Items.length === 0) {
-      return {};
-    }
-
-    const approvals: Record<string, boolean> = {};
-    for (const item of response.Items) {
-      const unmarshalled = unmarshall(item);
-      approvals[unmarshalled.reviewId] = unmarshalled.isApproved;
-    }
-
-    return approvals;
-  } catch (error) {
-    console.error('Failed to get approvals from DynamoDB', { listingId, error });
-    return {};
-  }
 }
 
 export async function GET(
@@ -84,24 +44,11 @@ export async function GET(
   const listingId = params.listingId;
 
   try {
-    // Step 1: Get all reviews for the listing
-    const reviews = await getReviewsByListingId(listingId);
+    // Get approved reviews for the listing (filtered in SQL query above)
+    const approvedReviews = await getReviewsByListingId(listingId);
 
-    if (reviews.length === 0) {
-      return NextResponse.json({
-        reviews: [],
-        total: 0,
-        message: 'No reviews found for this listing',
-      });
-    }
-
-    // Step 2: Get approvals for this listing
-    const approvals = await getApprovalsForListing(listingId);
-
-    // Step 3: Filter for approved reviews only and format them
-    const approvedReviews = reviews
-      .filter(review => approvals[review.reviewId] === true)
-      .map(review => ({
+    // Format reviews for frontend
+    const formattedReviews = approvedReviews.map(review => ({
         reviewId: review.reviewId,
         source: 'hostaway' as const,
         listingId: review.listingId,
@@ -123,13 +70,12 @@ export async function GET(
 
     console.log('Public reviews fetched', {
       listingId,
-      totalReviews: reviews.length,
-      approvedReviews: approvedReviews.length,
+      approvedReviews: formattedReviews.length,
     });
 
     return NextResponse.json({
       listingId,
-      reviews: approvedReviews,
+      reviews: formattedReviews,
     }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

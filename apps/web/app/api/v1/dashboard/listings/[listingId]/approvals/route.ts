@@ -5,22 +5,12 @@
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
-
-// Create fresh DynamoDB client for each request to avoid caching
-function createDynamoClient() {
-  return new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
-    maxAttempts: 3,
-  });
-}
 
 async function getReviewsByListingId(listingId: string) {
   const result = await pool.query(
@@ -32,6 +22,7 @@ async function getReviewsByListingId(listingId: string) {
       r.overall_rating as "overallRating",
       r.public_review as "reviewText",
       r.submitted_at as "submittedAt",
+      r.is_approved as "isApproved",
       json_object_agg(
         rc.category_key, rc.rating
       ) FILTER (WHERE rc.category_key IS NOT NULL) as "categoryRatings"
@@ -39,7 +30,7 @@ async function getReviewsByListingId(listingId: string) {
     LEFT JOIN review_categories rc ON r.review_id = rc.review_id
     WHERE r.listing_id = $1
     GROUP BY r.review_id, r.listing_id, r.listing_name, r.guest_name, 
-             r.overall_rating, r.public_review, r.submitted_at
+             r.overall_rating, r.public_review, r.submitted_at, r.is_approved
     ORDER BY r.submitted_at DESC`,
     [listingId]
   );
@@ -84,7 +75,7 @@ export async function GET(
   const listingId = params.listingId;
 
   try {
-    // Step 1: Get all reviews for the listing
+    // Get all reviews for the listing with approval status from PostgreSQL
     const reviews = await getReviewsByListingId(listingId);
 
     if (reviews.length === 0) {
@@ -95,14 +86,11 @@ export async function GET(
       });
     }
 
-    // Step 2: Get approvals for this listing
-    const approvals = await getApprovalsForListing(listingId);
-
-    // Step 3: Add approval status to each review
+    // Add isPending flag based on isApproved value from PostgreSQL
     const reviewsWithApprovalStatus = reviews.map(review => ({
       ...review,
-      isApproved: approvals[review.reviewId] === true,
-      isPending: approvals[review.reviewId] === undefined,
+      isApproved: review.isApproved === true,
+      isPending: review.isApproved === null,
     }));
 
     console.log('Reviews with approval status fetched', {

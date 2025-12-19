@@ -1,13 +1,11 @@
 /**
  * API Route for fetching dashboard listings with approval stats
  * GET /api/v1/dashboard/listings
- * Updated: 2025-12-18 - Fixed DynamoDB composite key reads
+ * Updated: 2025-12-18 - Simplified to use PostgreSQL only
  */
 
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Disable static optimization for this route
 export const dynamic = 'force-dynamic';
@@ -19,14 +17,6 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// Create fresh DynamoDB client for each request to avoid caching
-function createDynamoClient() {
-  return new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
-    maxAttempts: 3,
-  });
-}
-
 interface ReviewWithCategories {
   reviewId: string;
   listingId: string;
@@ -36,6 +26,7 @@ interface ReviewWithCategories {
   guestName: string;
   reviewText: string;
   categories: Record<string, number>;
+  isApproved: boolean | null;
 }
 
 async function queryReviewsWithCategories() {
@@ -48,71 +39,25 @@ async function queryReviewsWithCategories() {
       r.submitted_at as "submittedAt",
       r.guest_name as "guestName",
       r.public_review as "reviewText",
+      r.is_approved as "isApproved",
       json_object_agg(
         rc.category_key, rc.rating
       ) FILTER (WHERE rc.category_key IS NOT NULL) as categories
     FROM reviews r
     LEFT JOIN review_categories rc ON r.review_id = rc.review_id
     GROUP BY r.review_id, r.listing_id, r.listing_name, r.overall_rating, 
-             r.submitted_at, r.guest_name, r.public_review
+             r.submitted_at, r.guest_name, r.public_review, r.is_approved
     ORDER BY r.listing_name, r.submitted_at DESC
   `);
   return result.rows as ReviewWithCategories[];
 }
 
-async function getAllApprovals(): Promise<Record<string, Record<string, boolean>>> {
-  try {
-    const dynamoClient = createDynamoClient();
-    
-    const command = new ScanCommand({
-      TableName: process.env.APPROVALS_TABLE || 'flex-living-reviews-dev-approvals',
-    });
-
-    const response = await dynamoClient.send(command);
-    
-    console.log('[getAllApprovals] Scanned DynamoDB', { 
-      itemCount: response.Items?.length || 0,
-      timestamp: new Date().toISOString(),
-    });
-    
-    if (!response.Items || response.Items.length === 0) {
-      return {};
-    }
-
-    const approvalsByListing: Record<string, Record<string, boolean>> = {};
-    
-    for (const item of response.Items) {
-      const unmarshalled = unmarshall(item);
-      const { listingId, reviewId, isApproved } = unmarshalled;
-      
-      if (!approvalsByListing[listingId]) {
-        approvalsByListing[listingId] = {};
-      }
-      
-      approvalsByListing[listingId][reviewId] = isApproved;
-    }
-
-    console.log('[getAllApprovals] Grouped approvals', {
-      listingCount: Object.keys(approvalsByListing).length,
-      listings: Object.keys(approvalsByListing),
-    });
-
-    return approvalsByListing;
-  } catch (error) {
-    console.error('Failed to scan approvals from DynamoDB', { error });
-    return {};
-  }
-}
-
 export async function GET() {
   try {
-    // Step 1: Get all reviews with categories
+    // Get all reviews with categories and approval status from PostgreSQL
     const allReviews = await queryReviewsWithCategories();
 
-    // Step 2: Get all approvals
-    const allApprovals = await getAllApprovals();
-
-    // Step 3: Group reviews by listing and calculate KPIs
+    // Group reviews by listing and calculate KPIs
     const listingsMap: Record<string, {
       listingId: string;
       listingName: string;
@@ -130,20 +75,18 @@ export async function GET() {
       listingsMap[review.listingId].reviews.push(review);
     }
 
-    // Step 4: Build dashboard listings
+    // Build dashboard listings
     const dashboardListings = Object.values(listingsMap).map(listing => {
-      const approvals = allApprovals[listing.listingId] || {};
       const reviews = listing.reviews;
 
-      // Calculate approval stats - count only explicitly approved reviews
+      // Calculate approval stats from PostgreSQL data
       let approvedCount = 0;
       let rejectedCount = 0;
       
       reviews.forEach(review => {
-        const approvalStatus = approvals[review.reviewId];
-        if (approvalStatus === true) {
+        if (review.isApproved === true) {
           approvedCount++;
-        } else if (approvalStatus === false) {
+        } else if (review.isApproved === false) {
           rejectedCount++;
         }
       });
